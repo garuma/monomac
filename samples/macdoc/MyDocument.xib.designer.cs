@@ -26,6 +26,12 @@ namespace macdoc
 		[Outlet]
 		MonoMac.AppKit.NSTabView tabSelector { get; set; }
 
+		[Outlet]
+		MonoMac.AppKit.NSView spinnerView { get; set; }
+
+		[Outlet]
+		MonoMac.AppKit.NSProgressIndicator spinnerWidget { get; set; }
+
 		[Action ("IndexItemClicked:")]
 		partial void IndexItemClicked (MonoMac.AppKit.NSTableView sender);
 
@@ -57,6 +63,16 @@ namespace macdoc
 			if (tabSelector != null) {
 				tabSelector.Dispose ();
 				tabSelector = null;
+			}
+
+			if (spinnerView != null) {
+				spinnerView.Dispose ();
+				spinnerView = null;
+			}
+
+			if (spinnerWidget != null) {
+				spinnerWidget.Dispose ();
+				spinnerWidget = null;
 			}
 		}
 	}
