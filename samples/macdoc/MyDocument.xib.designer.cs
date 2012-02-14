@@ -32,6 +32,12 @@ namespace macdoc
 		[Outlet]
 		MonoMac.AppKit.NSProgressIndicator spinnerWidget { get; set; }
 
+		[Outlet]
+		MonoMac.AppKit.NSButton addBookmarkBtn { get; set; }
+
+		[Outlet]
+		MonoMac.AppKit.NSPopUpButton bookmarkSelector { get; set; }
+
 		[Action ("IndexItemClicked:")]
 		partial void IndexItemClicked (MonoMac.AppKit.NSTableView sender);
 
@@ -73,6 +79,16 @@ namespace macdoc
 			if (spinnerWidget != null) {
 				spinnerWidget.Dispose ();
 				spinnerWidget = null;
+			}
+
+			if (addBookmarkBtn != null) {
+				addBookmarkBtn.Dispose ();
+				addBookmarkBtn = null;
+			}
+
+			if (bookmarkSelector != null) {
+				bookmarkSelector.Dispose ();
+				bookmarkSelector = null;
 			}
 		}
 	}
