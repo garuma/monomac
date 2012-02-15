@@ -38,6 +38,9 @@ namespace macdoc
 		[Outlet]
 		MonoMac.AppKit.NSPopUpButton bookmarkSelector { get; set; }
 
+		[Outlet]
+		MonoMac.AppKit.NSButton viewBookmarksBtn { get; set; }
+
 		[Action ("IndexItemClicked:")]
 		partial void IndexItemClicked (MonoMac.AppKit.NSTableView sender);
 
@@ -89,6 +92,11 @@ namespace macdoc
 			if (bookmarkSelector != null) {
 				bookmarkSelector.Dispose ();
 				bookmarkSelector = null;
+			}
+
+			if (viewBookmarksBtn != null) {
+				viewBookmarksBtn.Dispose ();
+				viewBookmarksBtn = null;
 			}
 		}
 	}
