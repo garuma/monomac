@@ -128,7 +128,6 @@ namespace macdoc
 			
 			viewBookmarksBtn.Hidden = true;
 			bookmarkSelector.Hidden = true;
-			return;
 			
 			var manager = AppDelegate.BookmarkManager;
 			manager.BookmarkListChanged += (sender, e) => {

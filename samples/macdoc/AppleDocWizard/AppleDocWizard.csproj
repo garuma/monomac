@@ -36,8 +36,14 @@
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Drawing" />
     <Reference Include="MonoMac" />
-    <Reference Include="docfixer">
-      <HintPath>..\lib\docfixer.exe</HintPath>
+    <Reference Include="monodoc">
+      <HintPath>..\lib\monodoc.dll</HintPath>
+    </Reference>
+    <Reference Include="Ionic.Zip">
+      <HintPath>..\lib\Ionic.Zip.dll</HintPath>
+    </Reference>
+    <Reference Include="AgilityPack">
+      <HintPath>..\lib\AgilityPack.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -57,6 +63,10 @@
     <Compile Include="Main.cs" />
     <Compile Include="XarApi.cs" />
     <Compile Include="AppleDocWizardDelegate.cs" />
+    <Compile Include="AppleDocMerger.cs" />
+    <Compile Include="SQLite.cs" />
+    <Compile Include="samples.cs" />
+    <Compile Include="AppleDocKnownIssues.cs" />
   </ItemGroup>
   <ItemGroup>
     <InterfaceDefinition Include="AppleDocWizard.xib" />

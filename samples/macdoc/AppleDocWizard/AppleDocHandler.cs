@@ -21,7 +21,7 @@ namespace macdoc
 	{
 		public ProcessStage Stage { get; set; }
 		public int Percentage { get; set; } // Used during Downloading stage, a value of -1 indicates the stage just started
-		public string CurrentFile { get; set; } // User during Extracting stage, a value of null indicates the stage just started
+		public string CurrentFile { get; set; } // User during Extracting/Merging stage, a value of null indicates the stage just started
 	}
 	
 	public class AppleDocHandler
@@ -34,14 +34,16 @@ namespace macdoc
 			public string DownloadUrl { get; set; }
 		}
 		
-		readonly string[] searchPaths = new[] {
+		/*readonly string[] searchPaths = new[] {
 			"/Library/Developer/Shared/Documentation/DocSets/",
 			"/Developer/Platforms/iPhoneOS.platform/Developer/Documentation/DocSets/"
-		};
-		/*readonly string[] searchPaths = new[] {
-			"/Users/jeremie/mono/doctest"
 		};*/
-		const string MonodocLibPath = "/Library/Frameworks/Mono.framework/Versions/Current/lib/monodoc/";
+		readonly string[] searchPaths = new[] {
+			"/Users/jeremie/mono/doctest/"
+		};
+		//const string MonodocLibPath = "/Library/Frameworks/Mono.framework/Versions/Current/lib/monodoc/";
+		const string MonodocLibPath = "/Users/jeremie/mono/doctest";
+		const string MonoTouchLibPath = "/Developer/MonoTouch/usr/lib/mono/2.1/monotouch.dll";
 
 		public const string IosAtomFeed = "https://developer.apple.com/rss/com.apple.adc.documentation.AppleiPhone5_0.atom";
 		public const string MacLionAtomFeed = "http://developer.apple.com/rss/com.apple.adc.documentation.AppleLion.atom";
@@ -61,7 +63,7 @@ namespace macdoc
 			
 			WebClient wc = new WebClient ();
 			var feed = wc.DownloadString (feedUrl);
-			return appleFeed = XDocument.Parse (feed);	
+			return appleFeed = XDocument.Parse (feed);
 		}
 
 		// This method transforms the Atom XML data into a POCO for the the most recent item of the feed
@@ -149,10 +151,11 @@ namespace macdoc
 			
 			var tempPath = Path.GetTempFileName ();
 			var evt = new ManualResetEvent (false);
+			var evtArgs = new AppleDocEventArgs () { Stage = ProcessStage.Downloading };
 			
 			WebClient client = new WebClient ();
 			client.DownloadFileCompleted += (sender, e) => HandleAppleDocDownloadFinished (e, tempPath, evt, token);
-			client.DownloadProgressChanged += (sender, e) => FireAppleDocEvent (new AppleDocEventArgs () { Stage = ProcessStage.Downloading, Percentage = e.ProgressPercentage});
+			client.DownloadProgressChanged += (sender, e) => { evtArgs.Percentage = e.ProgressPercentage; FireAppleDocEvent (evtArgs); };
 
 			FireAppleDocEvent (new AppleDocEventArgs () { Stage = ProcessStage.Downloading, Percentage = -1 });
 			client.DownloadFileAsync (new Uri (infos.DownloadUrl), tempPath);
@@ -167,21 +170,34 @@ namespace macdoc
 					return;
 				}
 				FireAppleDocEvent (new AppleDocEventArgs () { Stage = ProcessStage.Extracting, CurrentFile = null });
-				XarApi.ExtractXar (path, searchPaths.First (), token, (filepath) => FireAppleDocEvent (new AppleDocEventArgs () { Stage = ProcessStage.Extracting, CurrentFile = filepath }));
+				var evtArgs = new AppleDocEventArgs () { Stage = ProcessStage.Extracting };
+				XarApi.ExtractXar (path, searchPaths.First (), token, (filepath) => { evtArgs.CurrentFile = filepath; FireAppleDocEvent (evtArgs); });
 			} finally {
 				evt.Set ();
 			}
 		}
 		
-		public void LaunchMergeProcess (AppleDocInformation infos, CancellationToken token)
+		public void LaunchMergeProcess (AppleDocInformation infos, string resourcePath, CancellationToken token)
 		{
 			// TODO: take token into account inside merging
 			if (token.IsCancellationRequested)
 				return;
 			
-			FireAppleDocEvent (new AppleDocEventArgs () { Stage = ProcessStage.Merging });
-			DocGenerator.Main (new [] { "--import-samples",  });
-			//Thread.Sleep (5000);
+			var evtArgs = new AppleDocEventArgs () { Stage = ProcessStage.Merging };
+			FireAppleDocEvent (evtArgs);
+			
+			var merger = new AppleDocMerger (new AppleDocMerger.Options () {
+				DocBase = Path.Combine (searchPaths.First (), infos.ID + ".docset", "Contents/Resources/Documents/documentation"),
+				Assembly = System.Reflection.Assembly.ReflectionOnlyLoadFrom (MonoTouchLibPath),
+				BaseAssemblyNamespace = "MonoTouch",
+				ImportSamples = true,
+				//SamplesRepositoryPath = Path.Combine (resourcePath, "samples.zip"),
+				MonoDocBaseDir = Path.Combine (MonodocLibPath, "en"),
+				SamplesRepositoryPath = Path.Combine (MonodocLibPath, "samples.zip"),
+				MergingPathCallback = path => { evtArgs.CurrentFile = path; FireAppleDocEvent (evtArgs); }
+			});
+			merger.MergeDocumentation ();
+			
 			var statusFile = Path.Combine (Environment.GetFolderPath (Environment.SpecialFolder.ApplicationData), "macdoc", "merge.status");
 			File.WriteAllText (statusFile, infos.Version.ToString ());
 			FireAppleDocEvent (new AppleDocEventArgs () { Stage = ProcessStage.Finished });
